@@ -1,9 +1,6 @@
 # Build stage
 FROM golang:1.25-alpine AS builder
 
-# Install build dependencies
-RUN apk add --no-cache git ca-certificates
-
 WORKDIR /app
 
 # Copy go mod files
@@ -21,11 +18,11 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -o /bot \
     cmd/main.go
 
-# Final stage
-FROM scratch
+# Final stage - using alpine instead of scratch
+FROM alpine:latest
 
-# Copy CA certificates for HTTPS
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+# Install CA certificates (already present but ensures latest)
+RUN apk --no-cache add ca-certificates
 
 # Copy the binary
 COPY --from=builder /bot /bot
