@@ -2,3 +2,4 @@
 .env
 .DS_Store
 build/
+__debug_bin*
