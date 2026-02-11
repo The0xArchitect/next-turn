@@ -284,7 +284,7 @@ func (h *Handlers) updateMessage(bot *tgbotapi.BotAPI, game *models.Game, inline
 		},
 		Text: text,
 	}
-	if _, err := bot.Send(edit); err != nil {
+	if _, err := bot.Request(edit); err != nil {
 		log.Printf("updateMessage error: %v", err)
 	}
 }
