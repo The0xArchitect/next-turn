@@ -2,8 +2,10 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
+	"net/http"
+	"os"
 	"strings"
 
 	"nextturn/internal/config"
@@ -20,7 +22,19 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func main() {
+var (
+	bot            *tgbotapi.BotAPI
+	database       *db.DB
+	inlineRouter   *handlers.InlineRouter
+	tttHandlers    *tictactoe.Handlers
+	fourxoHandlers *fourxo.Handlers
+	exoHandlers    *elephantxo.Handlers
+	c4Handlers     *connect4.Handlers
+	ckHandlers     *checkers.Handlers
+	pcHandlers     *poolcheckers.Handlers
+)
+
+func init() {
 	config.Validate()
 
 	// Register game engines
@@ -32,58 +46,98 @@ func main() {
 	core.Register(&poolcheckers.Engine{})
 
 	// Connect to database
-	database, err := db.Connect(config.DatabaseURL)
-	fmt.Println("Connected to database", database)
+	var err error
+	database, err = db.Connect(config.DatabaseURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer database.Close()
+	log.Println("Connected to database")
 
 	// Init bot
-	bot, err := tgbotapi.NewBotAPI(config.BotToken)
+	bot, err = tgbotapi.NewBotAPI(config.BotToken)
 	if err != nil {
 		log.Fatalf("Failed to create bot: %v", err)
 	}
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	// Init handlers
-	inlineRouter := handlers.NewInlineRouter(database)
-	tttHandlers := tictactoe.NewHandlers(database)
-	fourxoHandlers := fourxo.NewHandlers(database)
-	exoHandlers := elephantxo.NewHandlers(database)
-	c4Handlers := connect4.NewHandlers(database)
-	ckHandlers := checkers.NewHandlers(database)
-	pcHandlers := poolcheckers.NewHandlers(database)
+	inlineRouter = handlers.NewInlineRouter(database)
+	tttHandlers = tictactoe.NewHandlers(database)
+	fourxoHandlers = fourxo.NewHandlers(database)
+	exoHandlers = elephantxo.NewHandlers(database)
+	c4Handlers = connect4.NewHandlers(database)
+	ckHandlers = checkers.NewHandlers(database)
+	pcHandlers = poolcheckers.NewHandlers(database)
+}
 
-	// Start polling
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-	updates := bot.GetUpdatesChan(u)
+func main() {
+	// Get port from environment variable (Cloud Run sets this)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
-	log.Println("Bot started with long polling...")
+	// Set up webhook handler
+	http.HandleFunc("/", webhookHandler)
+	http.HandleFunc("/health", healthHandler)
 
-	for update := range updates {
-		go func(update tgbotapi.Update) {
-			defer func() {
-				if r := recover(); r != nil {
-					log.Printf("Recovered from panic: %v", r)
-				}
-			}()
+	log.Printf("Starting webhook server on port %s...", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+}
 
-			switch {
-			case update.Message != nil && update.Message.IsCommand():
-				handleCommand(bot, update.Message)
+func healthHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("OK"))
+}
 
-			case update.InlineQuery != nil:
-				inlineRouter.HandleInlineQuery(bot, update.InlineQuery)
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 
-			case update.ChosenInlineResult != nil:
-				inlineRouter.HandleChosenInlineResult(bot, update.ChosenInlineResult)
+	defer func() {
+		if rec := recover(); rec != nil {
+			log.Printf("Recovered from panic: %v", rec)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+	}()
 
-			case update.CallbackQuery != nil:
-				handleCallback(bot, update.CallbackQuery, tttHandlers, fourxoHandlers, exoHandlers, c4Handlers, ckHandlers, pcHandlers)
-			}
-		}(update)
+	var update tgbotapi.Update
+	if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
+		log.Printf("Failed to decode update: %v", err)
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	// Process update asynchronously
+	go processUpdate(update)
+
+	// Respond immediately to Telegram
+	w.WriteHeader(http.StatusOK)
+}
+
+func processUpdate(update tgbotapi.Update) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Recovered from panic in processUpdate: %v", r)
+		}
+	}()
+
+	switch {
+	case update.Message != nil && update.Message.IsCommand():
+		handleCommand(bot, update.Message)
+
+	case update.InlineQuery != nil:
+		inlineRouter.HandleInlineQuery(bot, update.InlineQuery)
+
+	case update.ChosenInlineResult != nil:
+		inlineRouter.HandleChosenInlineResult(bot, update.ChosenInlineResult)
+
+	case update.CallbackQuery != nil:
+		handleCallback(bot, update.CallbackQuery, tttHandlers, fourxoHandlers, exoHandlers, c4Handlers, ckHandlers, pcHandlers)
 	}
 }
 
