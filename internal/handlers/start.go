@@ -1,0 +1,31 @@
+// internal/handlers/start.go
+package handlers
+
+import (
+	"log"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
+
+func HandleStart(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
+	kb := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.InlineKeyboardButton{Text: "⭕ Tic Tac Toe", SwitchInlineQuery: strPtr("ttt")},
+		),
+	)
+
+	text := "🎮 Welcome to Next Turn!\n\n" +
+		"Choose a game and challenge your friends:\n\n" +
+		"• Tic Tac Toe - Classic 3×3"
+
+	reply := tgbotapi.NewMessage(msg.Chat.ID, text)
+	reply.ReplyMarkup = kb
+
+	if _, err := bot.Send(reply); err != nil {
+		log.Printf("HandleStart error: %v", err)
+	}
+}
+
+func strPtr(s string) *string {
+	return &s
+}
