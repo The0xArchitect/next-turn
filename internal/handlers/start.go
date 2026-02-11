@@ -13,12 +13,16 @@ func HandleStart(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
 			tgbotapi.InlineKeyboardButton{Text: "⭕ Tic Tac Toe", SwitchInlineQuery: strPtr("ttt")},
 			tgbotapi.InlineKeyboardButton{Text: "🎯 Four XO", SwitchInlineQuery: strPtr("4xo")},
 		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.InlineKeyboardButton{Text: "🐘 Elephant XO", SwitchInlineQuery: strPtr("exo")},
+		),
 	)
 
 	text := "🎮 Welcome to Next Turn!\n\n" +
 		"Choose a game and challenge your friends:\n\n" +
 		"• Tic Tac Toe - Classic 3×3\n" +
-		"• Four XO - 5×5 board, 4 in a row wins!"
+		"• Four XO - 5×5 board, 4 in a row wins!\n" +
+		"• Elephant XO - 7×7 board, 5 in a row wins!"
 
 	reply := tgbotapi.NewMessage(msg.Chat.ID, text)
 	reply.ReplyMarkup = kb
