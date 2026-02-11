@@ -9,6 +9,7 @@ import (
 	"nextturn/internal/config"
 	"nextturn/internal/core"
 	"nextturn/internal/db"
+	"nextturn/internal/games/connect4"
 	"nextturn/internal/games/elephantxo"
 	"nextturn/internal/games/fourxo"
 	"nextturn/internal/games/tictactoe"
@@ -24,6 +25,7 @@ func main() {
 	core.Register(&tictactoe.Engine{})
 	core.Register(&fourxo.Engine{})
 	core.Register(&elephantxo.Engine{})
+	core.Register(&connect4.Engine{})
 
 	// Connect to database
 	database, err := db.Connect(config.DatabaseURL)
@@ -45,6 +47,7 @@ func main() {
 	tttHandlers := tictactoe.NewHandlers(database)
 	fourxoHandlers := fourxo.NewHandlers(database)
 	exoHandlers := elephantxo.NewHandlers(database)
+	c4Handlers := connect4.NewHandlers(database)
 
 	// Start polling
 	u := tgbotapi.NewUpdate(0)
@@ -72,7 +75,7 @@ func main() {
 				inlineRouter.HandleChosenInlineResult(bot, update.ChosenInlineResult)
 
 			case update.CallbackQuery != nil:
-				handleCallback(bot, update.CallbackQuery, tttHandlers, fourxoHandlers, exoHandlers)
+				handleCallback(bot, update.CallbackQuery, tttHandlers, fourxoHandlers, exoHandlers, c4Handlers)
 			}
 		}(update)
 	}
@@ -85,7 +88,7 @@ func handleCommand(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
 	}
 }
 
-func handleCallback(bot *tgbotapi.BotAPI, cb *tgbotapi.CallbackQuery, tttHandlers *tictactoe.Handlers, fourxoHandlers *fourxo.Handlers, exoHandlers *elephantxo.Handlers) {
+func handleCallback(bot *tgbotapi.BotAPI, cb *tgbotapi.CallbackQuery, tttHandlers *tictactoe.Handlers, fourxoHandlers *fourxo.Handlers, exoHandlers *elephantxo.Handlers, c4Handlers *connect4.Handlers) {
 	data := cb.Data
 
 	if data == "noop" {
@@ -102,6 +105,8 @@ func handleCallback(bot *tgbotapi.BotAPI, cb *tgbotapi.CallbackQuery, tttHandler
 		fourxoHandlers.HandleCallback(bot, cb)
 	case "exo":
 		exoHandlers.HandleCallback(bot, cb)
+	case "c4":
+		c4Handlers.HandleCallback(bot, cb)
 	default:
 		resp := tgbotapi.NewCallback(cb.ID, "Unknown action")
 		bot.Request(resp)
