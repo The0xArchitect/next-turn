@@ -13,6 +13,7 @@ import (
 	"nextturn/internal/games/connect4"
 	"nextturn/internal/games/elephantxo"
 	"nextturn/internal/games/fourxo"
+	"nextturn/internal/games/poolcheckers"
 	"nextturn/internal/games/tictactoe"
 	"nextturn/internal/handlers"
 
@@ -28,6 +29,7 @@ func main() {
 	core.Register(&elephantxo.Engine{})
 	core.Register(&connect4.Engine{})
 	core.Register(&checkers.Engine{})
+	core.Register(&poolcheckers.Engine{})
 
 	// Connect to database
 	database, err := db.Connect(config.DatabaseURL)
@@ -51,6 +53,7 @@ func main() {
 	exoHandlers := elephantxo.NewHandlers(database)
 	c4Handlers := connect4.NewHandlers(database)
 	ckHandlers := checkers.NewHandlers(database)
+	pcHandlers := poolcheckers.NewHandlers(database)
 
 	// Start polling
 	u := tgbotapi.NewUpdate(0)
@@ -78,7 +81,7 @@ func main() {
 				inlineRouter.HandleChosenInlineResult(bot, update.ChosenInlineResult)
 
 			case update.CallbackQuery != nil:
-				handleCallback(bot, update.CallbackQuery, tttHandlers, fourxoHandlers, exoHandlers, c4Handlers, ckHandlers)
+				handleCallback(bot, update.CallbackQuery, tttHandlers, fourxoHandlers, exoHandlers, c4Handlers, ckHandlers, pcHandlers)
 			}
 		}(update)
 	}
@@ -97,6 +100,7 @@ func handleCallback(bot *tgbotapi.BotAPI, cb *tgbotapi.CallbackQuery,
 	exoHandlers *elephantxo.Handlers,
 	c4Handlers *connect4.Handlers,
 	ckHandlers *checkers.Handlers,
+	pcHandlers *poolcheckers.Handlers,
 ) {
 	data := cb.Data
 
@@ -118,6 +122,8 @@ func handleCallback(bot *tgbotapi.BotAPI, cb *tgbotapi.CallbackQuery,
 		c4Handlers.HandleCallback(bot, cb)
 	case "ck":
 		ckHandlers.HandleCallback(bot, cb)
+	case "pc":
+		pcHandlers.HandleCallback(bot, cb)
 	default:
 		resp := tgbotapi.NewCallback(cb.ID, "Unknown action")
 		bot.Request(resp)

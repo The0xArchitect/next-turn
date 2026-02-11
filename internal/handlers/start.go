@@ -19,6 +19,7 @@ func HandleStart(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.InlineKeyboardButton{Text: "⚫⚪ Checkers", SwitchInlineQuery: strPtr("ck")},
+			tgbotapi.InlineKeyboardButton{Text: "🎱 Pool Checkers", SwitchInlineQuery: strPtr("pc")},
 		),
 	)
 
@@ -28,7 +29,8 @@ func HandleStart(bot *tgbotapi.BotAPI, msg *tgbotapi.Message) {
 		"• Four XO - 5×5 board, 4 in a row wins!\n" +
 		"• Elephant XO - 7×7 board, 5 in a row wins!\n" +
 		"• Connect 4 - Drop discs, connect 4 to win!\n" +
-		"• Checkers - Classic checkers, capture all pieces!"
+		"• Checkers - Classic checkers, capture all pieces!\n" +
+		"• Pool Checkers - Checkers with flying kings!"
 
 	reply := tgbotapi.NewMessage(msg.Chat.ID, text)
 	reply.ReplyMarkup = kb

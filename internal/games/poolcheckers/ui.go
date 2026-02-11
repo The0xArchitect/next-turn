@@ -1,5 +1,5 @@
-// internal/games/checkers/ui.go
-package checkers
+// internal/games/poolcheckers/ui.go
+package poolcheckers
 
 import (
 	"fmt"
@@ -9,11 +9,11 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-const prefix = "ck"
+const prefix = "pc"
 
 func cellDisplay(cell byte, isSelected, isValidDest bool) string {
 	if isValidDest {
-		return "\u3000" // ideographic space — highlighted destination
+		return "\u3000" // ideographic space – highlighted destination
 	}
 	if isSelected {
 		if cell == 'w' || cell == 'W' {
@@ -25,11 +25,11 @@ func cellDisplay(cell byte, isSelected, isValidDest bool) string {
 	case 'w':
 		return "⚪" // white man
 	case 'W':
-		return "⬜️" // white king
+		return "👑" // white king (flying!)
 	case 'b':
 		return "⚫" // black man
 	case 'B':
-		return "⬛️" // black king
+		return "🎓" // black king (flying!)
 	default:
 		return "\u3000" // empty or light square
 	}
@@ -149,22 +149,22 @@ func Message(game *models.Game) string {
 
 func messageWaiting(game *models.Game) string {
 	if game.IsExpired() {
-		return "⚫⚪ Checkers\n\n⏰ This game has expired"
+		return "🎱 Pool Checkers\n\n⏰ This game has expired"
 	}
-	return fmt.Sprintf("⚫⚪ Checkers\n\n%s wants to play!\nTap Join to accept the challenge.", game.CreatorName)
+	return fmt.Sprintf("🎱 Pool Checkers\n\n%s wants to play!\nTap Join to accept the challenge.\n\n👑 Kings can fly diagonally!", game.CreatorName)
 }
 
 func messageReady(game *models.Game) string {
 	if game.IsExpired() {
-		return "⚫⚪ Checkers\n\n⏰ This game has expired"
+		return "🎱 Pool Checkers\n\n⏰ This game has expired"
 	}
-	return fmt.Sprintf("⚫⚪ Checkers\n\n⚪ %s vs ⚫ %s\n\nPlayers ready! Host can start the game.",
+	return fmt.Sprintf("🎱 Pool Checkers\n\n⚪ %s vs ⚫ %s\n\nPlayers ready! Host can start the game.",
 		game.XPlayerName(), game.OPlayerName())
 }
 
 func messagePlaying(game *models.Game) string {
 	if game.IsExpired() {
-		return "⚫⚪ Checkers\n\n⏰ This game has expired"
+		return "🎱 Pool Checkers\n\n⏰ This game has expired"
 	}
 	turnSymbol := "⚪"
 	if game.CurrentTurn == "O" {
@@ -174,7 +174,7 @@ func messagePlaying(game *models.Game) string {
 	if game.SelectedPos.Valid {
 		instruction = "Tap a square to move there"
 	}
-	return fmt.Sprintf("⚫⚪ Checkers\n\n⚪ %s vs ⚫ %s\n\n%s %s's turn\n%s",
+	return fmt.Sprintf("🎱 Pool Checkers\n\n⚪ %s vs ⚫ %s\n\n%s %s's turn\n%s",
 		game.XPlayerName(), game.OPlayerName(), turnSymbol, game.CurrentPlayerName(), instruction)
 }
 
@@ -196,6 +196,6 @@ func messageFinished(game *models.Game) string {
 	default:
 		resultText = "Game over"
 	}
-	return fmt.Sprintf("⚫⚪ Checkers\n\n⚪ %s vs ⚫ %s\n\n%s",
+	return fmt.Sprintf("🎱 Pool Checkers\n\n⚪ %s vs ⚫ %s\n\n%s",
 		game.XPlayerName(), game.OPlayerName(), resultText)
 }
