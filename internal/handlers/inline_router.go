@@ -168,7 +168,7 @@ func (r *InlineRouter) HandleChosenInlineResult(bot *tgbotapi.BotAPI, chosen *tg
 		},
 		Text: text,
 	}
-	if _, err := bot.Send(edit); err != nil {
+	if _, err := bot.Request(edit); err != nil {
 		log.Printf("editInlineMessage error: %v", err)
 	}
 }
