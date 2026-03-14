@@ -3,6 +3,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -33,6 +34,8 @@ var (
 	ckHandlers     *checkers.Handlers
 	pcHandlers     *poolcheckers.Handlers
 )
+
+var version = os.Getenv("VERSION")
 
 func init() {
 	config.Validate()
@@ -89,7 +92,10 @@ func main() {
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	if version == "" {
+		version = "x0.0.0"
+	}
+	w.Write([]byte(fmt.Sprintf(`{"status": "ok", "version": "%s"}`, version)))
 }
 
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
